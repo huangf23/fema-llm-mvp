@@ -18,6 +18,7 @@ def main() -> None:
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--limit", type=int, default=None, help="Optional cap for smoke tests.")
     parser.add_argument("--sleep", type=float, default=0.0, help="Seconds between requests.")
+    parser.add_argument("--concurrency", type=int, default=1, help="Number of concurrent API requests.")
     args = parser.parse_args()
 
     profile = resolve_profile(
@@ -27,7 +28,13 @@ def main() -> None:
         temperature_override=args.temperature,
     )
     output_path = prediction_path_for(args.profile, args.output)
-    written_path = run_predictions(profile=profile, output_path=output_path, limit=args.limit, sleep=args.sleep)
+    written_path = run_predictions(
+        profile=profile,
+        output_path=output_path,
+        limit=args.limit,
+        sleep=args.sleep,
+        concurrency=args.concurrency,
+    )
     print(f"Wrote predictions to {written_path}")
 
 

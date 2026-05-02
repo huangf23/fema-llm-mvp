@@ -1,5 +1,6 @@
 import json
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import pandas as pd
@@ -94,6 +95,7 @@ def run_predictions(
     output_path: Path | None = None,
     limit: int | None = None,
     sleep: float = 0.0,
+    concurrency: int = 1,
     config: ExperimentConfig = DEFAULT_EXPERIMENT,
 ) -> Path:
     output_path = output_path or prediction_path_for(profile.name, None)
@@ -105,49 +107,68 @@ def run_predictions(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     completed = load_completed(output_path)
 
-    with output_path.open("a", encoding="utf-8") as f:
-        for row in tqdm(prompts.to_dict("records"), total=len(prompts)):
-            for repeat_index in range(profile.repeat):
-                key = (str(row["id"]), row["condition"], repeat_index)
-                if key in completed:
-                    continue
-                try:
-                    raw, prediction = call_model(client, profile, row["prompt"], config)
-                    out = {
-                        "id": str(row["id"]),
-                        "condition": row["condition"],
-                        "target": row["target"],
-                        "prediction": prediction,
-                        "raw_output": raw,
-                        "repeat_index": repeat_index,
-                        "profile": profile.name,
-                        "model": profile.model,
-                        "base_url": profile.base_url,
-                        "temperature": profile.temperature,
-                        "top_p": profile.top_p,
-                        "max_tokens": profile.max_tokens,
-                        "seed": profile.seed,
-                        "json_mode": profile.json_mode,
-                        "thinking": profile.thinking,
-                    }
-                except Exception as exc:
-                    out = {
-                        "id": str(row["id"]),
-                        "condition": row["condition"],
-                        "target": row["target"],
-                        "prediction": "ERROR",
-                        "raw_output": repr(exc),
-                        "repeat_index": repeat_index,
-                        "profile": profile.name,
-                        "model": profile.model,
-                        "base_url": profile.base_url,
-                        "temperature": profile.temperature,
-                    }
+    tasks = []
+    for row in prompts.to_dict("records"):
+        for repeat_index in range(profile.repeat):
+            key = (str(row["id"]), row["condition"], repeat_index)
+            if key not in completed:
+                tasks.append((row, repeat_index))
 
+    def run_one(row: dict, repeat_index: int) -> dict:
+        try:
+            raw, prediction = call_model(client, profile, row["prompt"], config)
+            return {
+                "id": str(row["id"]),
+                "condition": row["condition"],
+                "target": row["target"],
+                "prediction": prediction,
+                "raw_output": raw,
+                "repeat_index": repeat_index,
+                "profile": profile.name,
+                "model": profile.model,
+                "base_url": profile.base_url,
+                "temperature": profile.temperature,
+                "top_p": profile.top_p,
+                "max_tokens": profile.max_tokens,
+                "seed": profile.seed,
+                "json_mode": profile.json_mode,
+                "thinking": profile.thinking,
+            }
+        except Exception as exc:
+            return {
+                "id": str(row["id"]),
+                "condition": row["condition"],
+                "target": row["target"],
+                "prediction": "ERROR",
+                "raw_output": repr(exc),
+                "repeat_index": repeat_index,
+                "profile": profile.name,
+                "model": profile.model,
+                "base_url": profile.base_url,
+                "temperature": profile.temperature,
+                "top_p": profile.top_p,
+                "max_tokens": profile.max_tokens,
+                "seed": profile.seed,
+                "json_mode": profile.json_mode,
+                "thinking": profile.thinking,
+            }
+
+    with output_path.open("a", encoding="utf-8") as f:
+        if concurrency <= 1:
+            for row, repeat_index in tqdm(tasks, total=len(tasks)):
+                out = run_one(row, repeat_index)
                 f.write(json.dumps(out, ensure_ascii=False) + "\n")
                 f.flush()
                 if sleep:
                     time.sleep(sleep)
+        else:
+            with ThreadPoolExecutor(max_workers=concurrency) as executor:
+                futures = [executor.submit(run_one, row, repeat_index) for row, repeat_index in tasks]
+                for future in tqdm(as_completed(futures), total=len(futures)):
+                    out = future.result()
+                    f.write(json.dumps(out, ensure_ascii=False) + "\n")
+                    f.flush()
+                    if sleep:
+                        time.sleep(sleep)
 
     return output_path
-

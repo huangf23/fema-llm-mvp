@@ -83,6 +83,12 @@ python run_profiles.py --limit 40
 python run_profiles.py
 ```
 
+Use concurrent API requests when needed:
+
+```bash
+python run_profiles.py --concurrency 10
+```
+
 No Python code change is needed for OpenAI-compatible providers.
 
 ## Adding A New Disclosure Condition
@@ -127,4 +133,3 @@ work/outputs/metrics_by_condition_<profile>.png
 ```
 
 Rows in `predictions_<profile>.jsonl` record model parameters such as `temperature`, `top_p`, `max_tokens`, `seed`, `json_mode`, `thinking`, and `repeat_index`.
-

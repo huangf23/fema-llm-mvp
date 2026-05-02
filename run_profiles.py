@@ -25,6 +25,7 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--sleep", type=float, default=0.0)
+    parser.add_argument("--concurrency", type=int, default=1)
     parser.add_argument("--skip-eval", action="store_true")
     args = parser.parse_args()
 
@@ -43,6 +44,8 @@ def main() -> None:
             output_name,
             "--sleep",
             str(args.sleep),
+            "--concurrency",
+            str(args.concurrency),
         ]
         if args.temperature is not None:
             cmd.extend(["--temperature", str(args.temperature)])

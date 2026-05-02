@@ -152,6 +152,12 @@ python run_profiles.py
 python run_profiles.py --sleep 0.2
 ```
 
+如果需要并发调用，例如 10 个请求并行：
+
+```bash
+python run_profiles.py --concurrency 10
+```
+
 如果只想跑某几个 profile，不改 `.env` 也可以：
 
 ```bash
