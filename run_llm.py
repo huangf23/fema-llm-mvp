@@ -12,6 +12,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--profile", default=None, help="Model profile name from .env, e.g. deepseek_v4_flash.")
+    parser.add_argument("--prompts", default=None, help="Prompt JSONL path. Defaults to work/outputs/prompts.jsonl.")
     parser.add_argument("--model", default=None)
     parser.add_argument("--base-url", default=None)
     parser.add_argument("--output", default=None, help="Prediction JSONL path. Defaults to predictions.jsonl or predictions_<profile>.jsonl.")
@@ -28,12 +29,18 @@ def main() -> None:
         temperature_override=args.temperature,
     )
     output_path = prediction_path_for(args.profile, args.output)
+    kwargs = {}
+    if args.prompts:
+        from pathlib import Path
+        kwargs["prompts_path"] = Path(args.prompts)
+
     written_path = run_predictions(
         profile=profile,
         output_path=output_path,
         limit=args.limit,
         sleep=args.sleep,
         concurrency=args.concurrency,
+        **kwargs,
     )
     print(f"Wrote predictions to {written_path}")
 

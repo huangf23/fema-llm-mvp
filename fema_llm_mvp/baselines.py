@@ -68,10 +68,16 @@ def _cross_val_predictions(model, x: pd.DataFrame, y: pd.Series, folds: int, see
 
 def run_baselines(
     sample_path: Path = SAMPLE_PATH,
+    output_dir: Path = OUTPUT_DIR,
     folds: int = 5,
     seed: int = 42,
     config: ExperimentConfig = DEFAULT_EXPERIMENT,
 ) -> pd.DataFrame:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    metrics_path = output_dir / "baseline_metrics_by_condition.csv"
+    predictions_path = output_dir / "baseline_predictions.csv"
+    plot_path = output_dir / "baseline_metrics_by_condition.png"
+
     sample = pd.read_csv(sample_path, dtype=str)
     sample = sample[sample[config.target].isin(config.labels)].copy()
     y = sample[config.target]
@@ -126,13 +132,13 @@ def run_baselines(
 
     metrics = pd.DataFrame(metrics_rows)
     predictions = pd.DataFrame(prediction_rows)
-    metrics.to_csv(BASELINE_METRICS_PATH, index=False)
-    predictions.to_csv(BASELINE_PREDICTIONS_PATH, index=False)
-    plot_baseline_metrics(metrics)
+    metrics.to_csv(metrics_path, index=False)
+    predictions.to_csv(predictions_path, index=False)
+    plot_baseline_metrics(metrics, plot_path)
     return metrics
 
 
-def plot_baseline_metrics(metrics: pd.DataFrame) -> None:
+def plot_baseline_metrics(metrics: pd.DataFrame, plot_path: Path = BASELINE_PLOT_PATH) -> None:
     if metrics.empty:
         return
 
@@ -146,5 +152,5 @@ def plot_baseline_metrics(metrics: pd.DataFrame) -> None:
     plt.title("Baseline Accuracy by Disclosure Condition")
     plt.legend()
     plt.tight_layout()
-    plt.savefig(BASELINE_PLOT_PATH, dpi=180)
+    plt.savefig(plot_path, dpi=180)
     plt.close()

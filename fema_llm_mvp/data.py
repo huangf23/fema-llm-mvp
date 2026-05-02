@@ -52,15 +52,20 @@ def stratified_sample(df: pd.DataFrame, n: int, seed: int, config: ExperimentCon
     return sample.reset_index(drop=True)
 
 
-def prepare_outputs(n: int, seed: int, config: ExperimentConfig = DEFAULT_EXPERIMENT) -> dict:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+def prepare_outputs(
+    n: int,
+    seed: int,
+    output_dir: Path = OUTPUT_DIR,
+    config: ExperimentConfig = DEFAULT_EXPERIMENT,
+) -> dict:
+    output_dir.mkdir(parents=True, exist_ok=True)
     xlsx_path = extract_source_file(config)
     df = load_core_survey(xlsx_path, config)
     sample = stratified_sample(df, n, seed, config)
 
     keep_fields = sorted({config.target, "id", *[f for fs in config.disclosure_fields.values() for f in fs]})
     existing_keep_fields = [f for f in keep_fields if f in sample.columns]
-    sample[existing_keep_fields].to_csv(OUTPUT_DIR / "sample.csv", index=False)
+    sample[existing_keep_fields].to_csv(output_dir / "sample.csv", index=False)
 
     prompt_rows = []
     for _, row in sample.iterrows():
@@ -76,7 +81,7 @@ def prepare_outputs(n: int, seed: int, config: ExperimentConfig = DEFAULT_EXPERI
             )
 
     prompts = pd.DataFrame(prompt_rows)
-    prompts.to_json(OUTPUT_DIR / "prompts.jsonl", orient="records", lines=True, force_ascii=False)
+    prompts.to_json(output_dir / "prompts.jsonl", orient="records", lines=True, force_ascii=False)
 
     metadata = {
         "source_zip": str(ZIP_PATH),
@@ -85,6 +90,5 @@ def prepare_outputs(n: int, seed: int, config: ExperimentConfig = DEFAULT_EXPERI
         "prompt_count": len(prompts),
         "config": asdict(config),
     }
-    (OUTPUT_DIR / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     return metadata
-

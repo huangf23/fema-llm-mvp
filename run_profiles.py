@@ -5,7 +5,7 @@ import sys
 
 from dotenv import load_dotenv
 
-from fema_llm_mvp.paths import OUTPUT_DIR, ROOT
+from fema_llm_mvp.paths import OUTPUT_DIR, ROOT, resolve_output_path
 from fema_llm_mvp.utils import safe_name
 
 
@@ -22,6 +22,8 @@ def main() -> None:
     load_dotenv(ROOT / ".env")
     parser = argparse.ArgumentParser()
     parser.add_argument("--profiles", default=os.getenv("EXPERIMENT_PROFILES", ""))
+    parser.add_argument("--prompts", default=None)
+    parser.add_argument("--output-dir", default=None)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--sleep", type=float, default=0.0)
@@ -35,6 +37,8 @@ def main() -> None:
 
     for profile in profiles:
         output_name = f"predictions_{safe_name(profile)}.jsonl"
+        if args.output_dir:
+            output_name = str(resolve_output_path(args.output_dir) / output_name)
         cmd = [
             sys.executable,
             "run_llm.py",
@@ -47,6 +51,8 @@ def main() -> None:
             "--concurrency",
             str(args.concurrency),
         ]
+        if args.prompts:
+            cmd.extend(["--prompts", args.prompts])
         if args.temperature is not None:
             cmd.extend(["--temperature", str(args.temperature)])
         if args.limit:

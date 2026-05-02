@@ -6,13 +6,13 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report, f1_score
 
 from .experiment_config import DEFAULT_EXPERIMENT, ExperimentConfig
-from .paths import DEFAULT_PREDICTIONS_PATH, OUTPUT_DIR, SAMPLE_PATH
+from .paths import DEFAULT_PREDICTIONS_PATH, OUTPUT_DIR, SAMPLE_PATH, resolve_output_path
 
 
 GROUP_FIELDS = ["age", "education", "income_agg", "disability"]
 
 
-def output_paths(predictions_path: Path, output_prefix: str | None) -> tuple[Path, Path, Path, Path]:
+def output_paths(predictions_path: Path, output_prefix: str | None, output_dir: Path = OUTPUT_DIR) -> tuple[Path, Path, Path, Path]:
     if output_prefix:
         prefix = output_prefix
     elif predictions_path.name == DEFAULT_PREDICTIONS_PATH.name:
@@ -22,24 +22,27 @@ def output_paths(predictions_path: Path, output_prefix: str | None) -> tuple[Pat
 
     suffix = f"_{prefix}" if prefix else ""
     return (
-        OUTPUT_DIR / f"metrics_by_condition{suffix}.csv",
-        OUTPUT_DIR / f"metrics_by_group{suffix}.csv",
-        OUTPUT_DIR / f"classification_report_by_condition{suffix}.json",
-        OUTPUT_DIR / f"metrics_by_condition{suffix}.png",
+        output_dir / f"metrics_by_condition{suffix}.csv",
+        output_dir / f"metrics_by_group{suffix}.csv",
+        output_dir / f"classification_report_by_condition{suffix}.json",
+        output_dir / f"metrics_by_condition{suffix}.png",
     )
 
 
 def evaluate_predictions(
     predictions_path: Path,
     output_prefix: str | None = None,
+    sample_path: Path | None = None,
     config: ExperimentConfig = DEFAULT_EXPERIMENT,
 ) -> pd.DataFrame:
     if not predictions_path.is_absolute():
-        predictions_path = OUTPUT_DIR / predictions_path
+        predictions_path = resolve_output_path(predictions_path)
     if not predictions_path.exists():
         raise SystemExit(f"No predictions found at {predictions_path}. Run run_llm.py first.")
 
-    summary_path, group_summary_path, report_path, plot_path = output_paths(predictions_path, output_prefix)
+    output_dir = predictions_path.parent
+    sample_path = sample_path or (output_dir / "sample.csv" if (output_dir / "sample.csv").exists() else SAMPLE_PATH)
+    summary_path, group_summary_path, report_path, plot_path = output_paths(predictions_path, output_prefix, output_dir)
 
     labels = list(config.labels)
     df = pd.read_json(predictions_path, lines=True)
@@ -81,8 +84,8 @@ def evaluate_predictions(
     metrics.to_csv(summary_path, index=False)
     report_path.write_text(json.dumps(reports, indent=2), encoding="utf-8")
 
-    if SAMPLE_PATH.exists():
-        sample = pd.read_csv(SAMPLE_PATH, dtype={"id": str})
+    if sample_path.exists():
+        sample = pd.read_csv(sample_path, dtype={"id": str})
         df["id"] = df["id"].astype(str)
         group_columns = ["id", *[g for g in GROUP_FIELDS if g in sample.columns]]
         merged = df.merge(sample[group_columns], on="id", how="left")
@@ -134,9 +137,8 @@ def evaluate_predictions(
 
     print(metrics.to_string(index=False))
     print(f"Wrote metrics: {summary_path}")
-    if SAMPLE_PATH.exists():
+    if sample_path.exists():
         print(f"Wrote group metrics: {group_summary_path}")
     print(f"Wrote report: {report_path}")
     print(f"Wrote plot: {plot_path}")
     return metrics
-

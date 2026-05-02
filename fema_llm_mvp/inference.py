@@ -8,7 +8,7 @@ from openai import OpenAI
 from tqdm import tqdm
 
 from .experiment_config import DEFAULT_EXPERIMENT, ExperimentConfig
-from .paths import DEFAULT_PREDICTIONS_PATH, OUTPUT_DIR, PROMPTS_PATH
+from .paths import DEFAULT_PREDICTIONS_PATH, OUTPUT_DIR, PROMPTS_PATH, resolve_output_path
 from .profiles import ModelProfile
 from .prompts import SYSTEM_PROMPT
 from .utils import safe_name
@@ -35,8 +35,7 @@ def parse_prediction(text: str, config: ExperimentConfig = DEFAULT_EXPERIMENT) -
 
 def prediction_path_for(profile: str | None, output: str | None) -> Path:
     if output:
-        path = Path(output)
-        return path if path.is_absolute() else OUTPUT_DIR / path
+        return resolve_output_path(output)
     if profile:
         return OUTPUT_DIR / f"predictions_{safe_name(profile)}.jsonl"
     return DEFAULT_PREDICTIONS_PATH
