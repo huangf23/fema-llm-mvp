@@ -4,6 +4,8 @@ This MVP tests whether progressive information disclosure improves LLM simulatio
 
 For full instructions on running this on another PC and using multiple OpenAI-compatible models, see [RUN_EXPERIMENTS.md](RUN_EXPERIMENTS.md).
 
+For the code architecture and extension points, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Setup
 
 ```bash

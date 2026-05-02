@@ -2,17 +2,11 @@ import argparse
 import os
 import subprocess
 import sys
-from pathlib import Path
 
 from dotenv import load_dotenv
 
-
-ROOT = Path(__file__).resolve().parent
-OUTPUT_DIR = ROOT / "work" / "outputs"
-
-
-def safe_name(value: str) -> str:
-    return "".join(ch if ch.isalnum() else "_" for ch in value).strip("_").lower()
+from fema_llm_mvp.paths import OUTPUT_DIR, ROOT
+from fema_llm_mvp.utils import safe_name
 
 
 def parse_profiles(value: str) -> list[str]:
@@ -29,7 +23,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--profiles", default=os.getenv("EXPERIMENT_PROFILES", ""))
     parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--temperature", type=float, default=0.0)
+    parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--sleep", type=float, default=0.0)
     parser.add_argument("--skip-eval", action="store_true")
     args = parser.parse_args()
@@ -47,11 +41,11 @@ def main() -> None:
             profile,
             "--output",
             output_name,
-            "--temperature",
-            str(args.temperature),
             "--sleep",
             str(args.sleep),
         ]
+        if args.temperature is not None:
+            cmd.extend(["--temperature", str(args.temperature)])
         if args.limit:
             cmd.extend(["--limit", str(args.limit)])
         run_command(cmd)
