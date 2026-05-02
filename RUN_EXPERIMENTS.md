@@ -185,12 +185,15 @@ python run_llm.py --model deepseek-v4-flash --output predictions_manual.jsonl
 - `metrics_by_group_<profile>.csv`: 按年龄、教育、收入、残障分组的误差
 - `classification_report_by_condition_<profile>.json`: 每个条件的分类报告
 - `metrics_by_condition_<profile>.png`: 指标随披露层级变化图
+- `baseline_metrics_by_condition.csv`: majority、logistic regression、random forest 的 C0-C3 对比
+- `baseline_predictions.csv`: baseline 的交叉验证预测明细
 
 ## 9. 推荐运行顺序
 
 ```bash
 source .venv/bin/activate
 python prepare_data.py --n 400 --seed 42
+python run_baselines.py
 python run_profiles.py --limit 40
 python run_profiles.py
 ```

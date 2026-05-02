@@ -16,6 +16,7 @@ fema_llm_mvp/
   prompts.py            Prompt template and system prompt
   profiles.py           ModelProfile and .env profile resolution
   inference.py          OpenAI-compatible API calls, retries/resume bookkeeping
+  baselines.py          Majority, logistic regression, and random forest baselines
   evaluation.py         Overall and subgroup metrics
   paths.py              Shared paths
   utils.py              Small helpers
@@ -133,3 +134,19 @@ work/outputs/metrics_by_condition_<profile>.png
 ```
 
 Rows in `predictions_<profile>.jsonl` record model parameters such as `temperature`, `top_p`, `max_tokens`, `seed`, `json_mode`, `thinking`, and `repeat_index`.
+
+## Baselines
+
+Traditional baselines use the same disclosure fields as the LLM prompts:
+
+```bash
+python run_baselines.py
+```
+
+The baseline script runs:
+
+- majority baseline for C0-C3
+- logistic regression for C1-C3
+- random forest for C1-C3
+
+Logistic regression and random forest are evaluated with stratified cross-validation on `work/outputs/sample.csv`.

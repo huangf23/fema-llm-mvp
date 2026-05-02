@@ -50,6 +50,12 @@ Evaluate predictions:
 python evaluate.py --predictions predictions_deepseek_v4_flash.jsonl --output-prefix deepseek_v4_flash
 ```
 
+Run traditional baselines:
+
+```bash
+python run_baselines.py
+```
+
 ## Disclosure Conditions
 
 - `C0`: disaster definition and target question only
