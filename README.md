@@ -6,6 +6,8 @@ For full instructions on running this on another PC and using multiple OpenAI-co
 
 For the code architecture and extension points, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+For the current Chinese research design draft, see [docs/EXPERIMENT_DESIGN_CN.md](docs/EXPERIMENT_DESIGN_CN.md).
+
 ## Setup
 
 ```bash
