@@ -1,21 +1,28 @@
-# FEMA 问卷数据的 LLM 受灾人口决策模拟实验设计
+# FEMA 问卷数据的 LLM 公众灾害准备状态模拟实验设计
 
-本文档整理当前项目中已经形成的实验构想，用于研究大语言模型能否基于有限受访者信息，模拟 FEMA National Household Survey 中的灾害准备状态判断。
+本文档整理当前项目中已经形成的实验构想。研究对象不是一般意义上的问卷答案预测，而是 FEMA National Household Survey 中的公众灾害准备状态，即受访者是否属于 `Prepared Individuals` 或 `Unprepared Individuals`。
+
+本文将 Prepared / Unprepared 视为公众灾害准备行为状态的经验测量，考察 LLM 能否在不同信息披露条件下复现这一状态的个体差异、总体比例和分组差异。
 
 ## 1. 研究目标
 
+本研究关注公众灾害准备状态的 AI 模拟问题。FEMA National Household Survey 将受访者的灾害准备状态归纳为 Prepared Individuals 与 Unprepared Individuals。本文以这一分类为核心结果变量，检验大语言模型能否在有限信息条件下模拟公众是否处于灾害准备状态。
+
 核心研究问题：
 
-> 在应急管理场景中，LLM 能否根据受灾人口或潜在受灾人口的有限基础信息，预测其灾害准备状态，并复现真实问卷结果中的个体差异与总体分布？
+> 在应急管理场景中，LLM 能否基于受访者的人口学特征、灾害风险感知、灾害经历、准备效能感、家庭约束与资源条件，准确区分 Prepared Individuals 与 Unprepared Individuals，并复现真实 FEMA 问卷中的个体差异和总体比例？
 
 进一步的问题包括：
 
-- 最少需要披露哪些信息，才能让 LLM 预测结果接近真实问卷？
-- LLM 的预测能力是否优于简单统计基线？
-- LLM 是否存在系统性偏差，例如过度预测 Prepared 或 Unprepared？
-- 传统统计模型的信息是否可以帮助校准 LLM 模拟？
-- 不同模型、温度、是否思考、重复采样等模型因素是否影响结果稳定性？
-- 跨年份数据合并后，结论是否仍然稳健？
+- 哪些类型的信息最有助于区分 Prepared 与 Unprepared 人群？
+- 在只披露少量信息时，LLM 对 Prepared / Unprepared 的判断是否接近真实问卷？
+- LLM 是否系统性高估或低估公众的灾害准备状态？
+- LLM 在区分 Prepared / Unprepared 时是否优于 majority baseline、logistic regression 和 random forest？
+- 传统统计模型提取出的准备状态影响因素，能否帮助校准 LLM 对 Prepared / Unprepared 的判断？
+- 不同模型、温度、是否启用思考、重复采样等设置是否会影响 Prepared / Unprepared 模拟的稳定性？
+- 在跨年份 FEMA NHS 数据中，Prepared / Unprepared 模拟结果是否具有稳健性？
+
+因此，本文并不将 Prepared / Unprepared 仅视为一个机器学习分类标签，而是将其作为应急管理中的公众准备行为状态。渐进式信息披露的目的，是识别哪些个体、家庭和风险情境信息对于 AI 复现公众灾害准备差异是必要的。
 
 ## 2. 数据来源
 
@@ -41,7 +48,7 @@
 
 ## 3. 目标变量
 
-当前目标是预测受访者是否属于：
+当前目标是模拟 FEMA 对受访者灾害准备状态的二分类测量，即受访者是否属于：
 
 - `Prepared Individuals`
 - `Unprepared Individuals`
@@ -70,7 +77,7 @@ dis_2_prepstages
 
 ## 4. 主实验：渐进式信息披露
 
-主实验采用 progressive disclosure，让 LLM 在不同信息量下预测同一个受访者的灾害准备状态。
+主实验采用 progressive disclosure，让 LLM 在不同信息量下判断同一个受访者的灾害准备状态。实验重点不是单纯比较分类准确率，而是观察不同信息层如何改变模型对 Prepared / Unprepared 的判断，以及这些判断是否接近真实人群分布。
 
 ### C0：无个体信息
 
@@ -84,7 +91,7 @@ dis_2_prepstages
 
 - 检查 LLM 的先验倾向
 - 观察模型在没有个体信息时是否偏向 Prepared 或 Unprepared
-- 对应 majority baseline 或总体先验
+- 作为“无个体画像”条件下的准备状态模拟基准
 
 ### C1：基础人口学信息
 
@@ -99,8 +106,8 @@ dis_2_prepstages
 
 目的：
 
-- 测试人口学画像是否足以模拟部分灾害准备差异
-- 观察 LLM 是否依赖社会经济刻板规律
+- 测试人口学画像是否足以区分部分 Prepared / Unprepared 差异
+- 观察 LLM 是否将年龄、教育、收入等社会经济特征作为准备状态线索
 
 ### C2：地理、风险感知与灾害经历
 
@@ -115,8 +122,8 @@ dis_2_prepstages
 
 目的：
 
-- 测试环境暴露、风险感知和经验是否提高预测准确性
-- 判断 LLM 是否能够利用灾害情境变量
+- 测试环境暴露、风险感知和灾害经历是否帮助模型识别准备状态
+- 判断 LLM 是否能够利用灾害情境变量解释 Prepared / Unprepared 差异
 
 ### C3：准备效能、信心、家庭约束与资源
 
@@ -133,8 +140,8 @@ dis_2_prepstages
 
 目的：
 
-- 测试最完整的个体与家庭画像能否接近真实问卷结果
-- 识别心理变量和家庭资源变量对 LLM 模拟的边际贡献
+- 测试最完整的个体与家庭画像能否复现真实 Prepared / Unprepared 判断
+- 识别准备效能、信心和家庭资源变量对准备状态模拟的边际贡献
 
 ## 5. 当前 n=1600 实验结果
 
@@ -163,14 +170,14 @@ LLM 结果：
 
 初步解释：
 
-- LLM 预测表现随信息披露增加而提升，说明 progressive disclosure 是有效实验设计。
-- C0 几乎不预测 Prepared，说明模型先验与样本分布不一致。
-- C2 和 C3 明显高估 Prepared，说明模型存在分布校准问题。
-- C3 的个体分类能力提高，但总体分布复现仍不理想。
+- LLM 区分 Prepared / Unprepared 的能力随信息披露增加而提升，说明渐进式披露能揭示不同信息层对准备状态模拟的贡献。
+- C0 几乎不判断受访者为 Prepared，说明模型在无个体信息时的准备状态先验与 FEMA 样本分布不一致。
+- C2 和 C3 明显高估 Prepared，说明模型可能过度相信风险感知、灾害经历和准备效能信息会转化为真实准备状态。
+- C3 的个体分类能力提高，但总体 Prepared 比例复现仍不理想，这提示应急管理中的 AI 人群模拟需要同时评估个体准确性与总体校准。
 
 ## 6. 传统基线实验
 
-为避免只报告 LLM 结果，需要加入传统机器学习基线。
+为判断 LLM 是否真的学到了 Prepared / Unprepared 的有效区分规则，需要加入传统机器学习基线。
 
 当前 baseline：
 
@@ -201,7 +208,7 @@ n=1600 baseline 结果：
 
 - 传统模型在 C3 条件下略优于当前 DeepSeek V4 Flash。
 - Logistic regression 和 random forest 的 Prepared 比例更接近真实分布。
-- LLM 的价值不一定是单纯分类准确率，而是作为可解释、可提示、可模拟的行为生成模型。
+- LLM 的价值不一定是单纯分类准确率，而是作为可解释、可提示、可进行情景推演的准备状态模拟器。
 
 ## 7. 回归信息增强 LLM 实验
 
@@ -209,14 +216,14 @@ n=1600 baseline 结果：
 
 核心问题：
 
-> LLM 在个体信息之外，如果获得统计模型总结出的群体规律，是否能更接近真实问卷结果？
+> LLM 在个体信息之外，如果获得统计模型总结出的 Prepared / Unprepared 群体规律，是否能更准确地区分公众灾害准备状态，并更好复现真实 Prepared 比例？
 
 需要避免信息泄露：
 
 - 先划分 train/test
 - 在 train 上训练 logistic regression 或 random forest
 - 只把 train 得到的规律输入 LLM
-- 在 test 上评估 LLM 预测
+- 在 test 上评估 LLM 对准备状态的判断
 
 ### C4a：回归方向摘要
 
@@ -235,8 +242,8 @@ Use these tendencies only as background information. Make the final prediction f
 
 目的：
 
-- 测试统计规律是否能校准 LLM 判断
-- 观察 LLM 是否能合理整合群体层面的信息
+- 测试统计规律是否能校准 LLM 对 Prepared / Unprepared 的判断
+- 观察 LLM 是否能合理整合群体层面的准备状态影响因素
 
 ### C4b：加入 logistic regression 预测概率
 
@@ -250,7 +257,7 @@ P(Prepared Individuals) = 0.67.
 目的：
 
 - 测试 LLM 是否能利用数值概率
-- 比较 LLM 是否只是复述概率，还是会结合个体叙述重新判断
+- 比较 LLM 是否只是复述概率，还是会结合个体画像重新判断准备状态
 
 ### C4c：概率加特征贡献
 
@@ -272,7 +279,7 @@ Main factors decreasing this probability:
 目的：
 
 - 将传统模型的可解释性转化为 LLM prompt
-- 测试 LLM 作为“统计模型解释器 + 个体模拟器”的潜力
+- 测试 LLM 作为“统计模型解释器 + 准备状态模拟器”的潜力
 
 ## 8. 模型因素实验
 
@@ -360,7 +367,7 @@ LLM 结果可能受到模型端设置影响，因此需要显式记录和比较�
 总体分布层面：
 
 - 真实 Prepared rate
-- 预测 Prepared rate
+- 模型判断的 Prepared rate
 - Prepared rate error
 - Absolute prepared rate error
 
@@ -393,19 +400,19 @@ LLM 结果可能受到模型端设置影响，因此需要显式记录和比较�
 第一，信息披露效应：
 
 - C0 到 C3 性能逐步提升
-- 说明 LLM 能利用受访者信息改善个体模拟
-- 哪些信息层最有贡献，可以对应应急管理理论
+- 说明 LLM 能利用受访者信息改善 Prepared / Unprepared 状态判断
+- 哪些信息层最有贡献，可以对应灾害准备行为理论
 
 第二，LLM 与传统模型的差异：
 
 - 传统模型在准确率和总体分布校准上可能更强
-- LLM 的优势在于可提示、可解释、可进行情景模拟
+- LLM 的优势在于可提示、可解释、可进行灾害准备情景模拟
 - LLM 不应被简单视为传统分类器替代品
 
 第三，分布偏差：
 
 - LLM 可能系统性高估或低估 Prepared
-- 这种偏差本身是研究对象
+- 这种偏差反映模型对公众准备行为机制的隐含假设，本身是研究对象
 - 应急管理中的 AI 模拟不能只看个体 accuracy，还要看总体分布是否接近真实人群
 
 ## 12. 推荐的论文实验结构
@@ -522,8 +529,8 @@ python run_baselines.py \
 
 论文贡献可以写成：
 
-1. 提出一个用于灾害准备行为问卷模拟的渐进式信息披露框架。
-2. 比较 LLM、majority baseline、logistic regression 和 random forest 在个体预测和总体分布复现上的差异。
-3. 发现 LLM 能随信息增加改善预测，但可能存在明显分布校准偏差。
-4. 探索统计模型信息增强 LLM 模拟的可能性。
-5. 为应急管理中的 AI 人群模拟提供可复现的公开数据实验范式。
+1. 提出一个用于公众灾害准备状态模拟的渐进式信息披露框架。
+2. 将 FEMA 的 Prepared / Unprepared 分类作为应急管理中的经验结果变量，比较 LLM、majority baseline、logistic regression 和 random forest 在个体区分和总体比例复现上的差异。
+3. 发现 LLM 能随信息增加改善 Prepared / Unprepared 判断，但可能存在明显的准备状态分布校准偏差。
+4. 探索统计模型信息增强 LLM 对公众灾害准备状态判断的可能性。
+5. 为应急管理中的 AI 人群准备状态模拟提供可复现的公开数据实验范式。
